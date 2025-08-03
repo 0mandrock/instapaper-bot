@@ -7,8 +7,21 @@ import requests
 
 db_url = os.environ["DATABASE_URL"]
 
-connection = psycopg2.connect(db_url)
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+connection = psycopg2.connect(db_url, sslmode="require")
 cursor = connection.cursor()
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        id BIGINT PRIMARY KEY,
+        username TEXT,
+        password TEXT
+    );
+    """
+)
+connection.commit()
 
 
 class Instapaper(object):
