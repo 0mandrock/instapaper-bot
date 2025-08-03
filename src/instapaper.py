@@ -7,8 +7,21 @@ import requests
 
 db_url = os.environ["DATABASE_URL"]
 
-connection = psycopg2.connect(db_url)
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+connection = psycopg2.connect(db_url, sslmode="require")
 cursor = connection.cursor()
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        id BIGINT PRIMARY KEY,
+        username TEXT,
+        password TEXT
+    );
+    """
+)
+connection.commit()
 
 
 class Instapaper(object):
@@ -44,7 +57,10 @@ class Instapaper(object):
                 cursor.execute("INSERT INTO users VALUES (%s, %s, %s);", (self._user_id, username, password))
 
             except psycopg2.IntegrityError:
-                cursor.execute("UPDATE users SET id = %(id)s WHERE id = %(id)s;", {'id': user_id})
+                cursor.execute(
+                    "UPDATE users SET username = %s, password = %s WHERE id = %s;",
+                    (username, password, self._user_id),
+                )
 
             connection.commit()
 
@@ -70,4 +86,4 @@ class Instapaper(object):
         """
         Checks if the user is authorized.
         """
-        return True if self._username else None
+        return bool(self._username)
