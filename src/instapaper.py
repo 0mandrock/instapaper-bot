@@ -44,7 +44,10 @@ class Instapaper(object):
                 cursor.execute("INSERT INTO users VALUES (%s, %s, %s);", (self._user_id, username, password))
 
             except psycopg2.IntegrityError:
-                cursor.execute("UPDATE users SET id = %(id)s WHERE id = %(id)s;", {'id': user_id})
+                cursor.execute(
+                    "UPDATE users SET username = %s, password = %s WHERE id = %s;",
+                    (username, password, self._user_id),
+                )
 
             connection.commit()
 
@@ -70,4 +73,4 @@ class Instapaper(object):
         """
         Checks if the user is authorized.
         """
-        return True if self._username else None
+        return bool(self._username)
